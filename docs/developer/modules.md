@@ -1,0 +1,324 @@
+# Modules
+<p class="uk-article-lead">Biskuit uses *Modules* to set up the application code. The module definition is used to provide bootstrapping, routing and other configuration options. Here you can listen for events, add custom classes and your own controllers.</p>
+
+## Definition: index.php
+In order to load and configure a module, Biskuit has a ModuleManager. It will look for an `index.php` file in the root of the module's directory and expect it to return a PHP array. Think of this array as the bootstrap for the modules code.
+
+By setting the right properties in this array, you tell Biskuit everything it needs to know about your module.
+
+```php
+<?php
+
+/*
+ * Return a php array which is the module definition.
+ */
+return [
+
+    // Required: Unique module name
+    'name' => 'hello',
+
+];
+```
+
+This minimal example is a valid module definition, although it doesn't do anything except being loaded by Biskuit. A module is only loaded if the package it comes in has been enabled in the admin panel.
+
+**Note:** If you start exploring Biskuit's internal structure, you will see the same module structure in many places, it's a central concept of the Biskuit architecture.
+
+
+## Available properties
+
+The following table gives an overview of all keys that you can use in the module definition array. The sections below then explain the properties in detail and include code examples. You can directly jump to each section by clicking one of the *Details* links.
+
+Key       | Description                       | More
+--------- | --------------------------------- | -----
+`main`   | Bootstrap code, executed when module is loaded | [Details](#bootstrap-code)
+`autoload` | Register namespaces to be autoloaded | [Details](#register-custom-namespaces)
+`routes`    | Mount controllers | [Details](#mount-controllers)
+`permissions`  | Define and register permission names | [Details](#define-permissions)
+`resources`  | Register resource shorthands | [Details](#register-resource-shorthands)
+`events`    | Listen to events from Biskuit or other modules | [Details](#listen-to-events)
+`config`    | Default module configuration | [Details](#default-module-configuration)
+`nodes`    | Register Nodes for the Site Tree | [Details](#register-nodes-for-site-tree)
+`node`    | Default options for node configuration | [Details](#node-options)
+`settings`    | Link to a settings screen | [Details](#link-to-a-settings-screen)
+`menu` | Add menu items to the admin panel | [Details](#add-menu-items-to-the-admin-panel)
+`widgets`    | Register Widgets | [Details](#register-widgets)
+`widget`    | Default options for widget configuration | [Details](#widget-options)
+
+## Bootstrap code
+
+To execute any kind of PHP code you can assign a callback function to the `main` property. The function receives the Biskuit Application container instance as a parameter.
+
+```php
+use Biskuit\Application;
+
+// ...
+
+'main' => function (Application $app) {
+    // bootstrap code
+}
+```
+
+This function is called when this module is loaded, so on every regular page request. However, the module's `index.php` needs to be located in a valid package and the package needs to be enabled in the admin panel. This means that an extension needs to be installed and also enabled in order for the bootstrap code to be loaded. If you use this inside a theme, only the bootstrap code from the currently activated theme is executed.
+
+Instead of assigning a callback function and having all of your code directly in the `index.php`, you can also create a dedicated module class in a separate file. You then specify the full name of your module class (including the namespace) as the value of the `main` property.
+
+```php
+'main' => 'MyNamespace\\MyModule',
+```
+
+**Note** The referenced namespace has to be [autoloaded](#register-custom-namespaces) in order for this to work. Make sure the `MyModule` class implements the interface `Biskuit\Module\ModuleInterface`.
+
+## Register custom namespaces
+
+Pass a list of namespaces and paths to be autoloaded by Biskuit. The path is relative to the module's path, so that `src` in the following example is located at `packages/VENDOR/PACKAGE/src`, assuming the module definition is located at `packages/VENDOR/PACKAGE/index.php`.
+
+```php
+'autoload' => [
+
+    'Biskuit\\Hello\\' => 'src'
+
+]
+```
+
+The classes from the linked directory are then available to referenced in `use` statements across the Biskuit codebase.
+
+```php
+<?php
+use Biskuit\Hello\HelloExtension;
+```
+
+## Mount controllers
+Use the `routes` property to mount controllers to a route. Learn more about [Routing and Controllers](routing.md).
+
+```php
+'routes' => [
+
+    '/hello' => [
+        'name' => '@hello/admin',
+        'controller' => [
+            'Biskuit\\Hello\\Controller\\HelloController'
+        ]
+    ]
+
+]
+```
+
+## Define permissions
+Your module can define permissions. These can then be assigned to roles in the Biskuit User &amp; Permissions area.
+
+The unique permission names you define (here `hello: manage settings`) are used as an identifier across the codebase. You can use this identifier to protect your routes from users who do not have this permission and prevent users from performing unauthorized actions.
+
+```php
+'permissions' => [
+
+    'hello: manage settings' => [
+        'title' => 'Manage settings'
+    ]
+
+]
+```
+
+A simple way to then protect a controller action is by using an annotation as follows. Read about [annotations](routing.md#annotations) to find out more.
+
+```php
+<?php
+
+class MyController {
+
+	/**
+  	* @Access("hello: manage settings")
+  	*/
+	public function settingsAction() {
+	}
+}
+```
+
+## Register resource shorthands
+You can register prefixes to be used as shorter versions when working with paths. For example use `views:admin/settings.php` to reference `packages/VENDOR/PACKAGE/views/admin/settings.php`. Biskuit registers a few paths for extensions and themes by default already.
+
+This works whenever the Biskuit filesystem is used (i.e. when generating the url for a file path or rendering a view from a controller).
+
+```php
+'resources' => [
+
+    'views:' => 'views'
+
+],
+```
+
+## Listen to events
+Events are triggered at several points in the Biskuit core and potentially by other modules. An event always has a unique name that identifies it. You can register callback functions to any event.
+
+For more information on the Event system, check out the [Events section](events.md)
+
+```php
+'events' => [
+
+    'view.scripts' => function ($event, $scripts) {
+        $scripts->register('hello-settings', 'hello:app/bundle/settings.js', '~extensions');
+    }
+
+]
+```
+
+## Default module configuration
+In many cases you want to allow the user to change settings for your module, for example by providing a settings screen. To make sure your module always has some configuration values right from the start, you can provide a default module configuration.
+
+```php
+'config' => [
+    'default' => 'World'
+],
+```
+
+Any changes to this configuration array will later be stored by the database. The default values are then always merged with the values from the database and the merge result will be available as the config property of the module object as you can see in the examples in the next two sections.
+
+### Read config
+To read the config of a module, you can access the `config` property of the module instance. This object is the result of both the default config stored inside the `index.php` and changes that are stored in the database.
+
+```php
+$config = $app->module('hello')->config;
+```
+
+### Write config
+To store changes for a module config, use the `config()` service. These changes will automatically propagate to the database.
+
+```php
+// Complete config
+$app->config()->set('hello', $config);
+
+// Single Value
+$app->config('hello')->set('message', 'Custom message');
+```
+
+**Note**. If you directly read the config from the module, it will still have the old value. After the next request, Biskuit will have merged the changes and made them available as the `config` property of the `$module` instance.
+
+## Register Nodes for Site Tree
+Nodes are similar to routes with the main difference that they can be dragged around in the Site Tree View and therefore dynamically result in a calculated route.
+
+When you have added a Node, it will be available in the Site Tree. Click the _Add Page_ button to see the Dropdown of all available Node types.
+
+For more information on nodes, check out the [Routing section](../developer/routing.md).
+
+```php
+'nodes' => [
+
+    'hello' => [
+
+        // The name of the node route
+        'name' => '@hello',
+
+        // Label to display in the admin panel
+        'label' => 'Hello',
+
+        // The controller for this node. Each controller action will be mounted
+        'controller' => 'Biskuit\\Hello\\Controller\\SiteController'
+    ]
+
+]
+```
+
+## Node options
+
+If your module wants to add a configuration screen to the content editor in the Site Tree, you can use the `node` property to add default options to the node object (complete explanation for configuration screen in the [Theme tutorial](../tutorials/theme.md#adding-position-options)).
+
+
+In the following example, a theme defines a `top_style` property which is automatically added to every node object that is rendered. By default, the property will have the value `uk-block-muted`, which is a CSS class that we want to render for the `top` position, in this example.
+
+```php
+'node' => [
+
+    'top_style' => 'uk-block-muted'
+
+],
+```
+
+When rendering a page in the `template.php` of the theme, you can then access that property from the `$params` array.
+
+```php
+<?php echo $params['top_style'] ?>
+```
+
+With the `node` property, you set the default value for every node. To allow the user to change these values, you will want to add an interface to the admin area (typically in the form of an addition _Theme_ tab when editing a page's content).
+
+To allow the user to change the values of the default widget options that you have defined here, you can add an interface to the admin area. To achieve that, you define a JavaScript component to display the editing screen ([Example](https://github.com/biskuit/example-theme/blob/master/app/components/node-theme.vue)), register that JavaScript file on the content editor page ([Example](https://github.com/biskuit/example-theme/blob/master/index.php#L43)) and optionally update your Webpack configuration, if you are using Webpack ([Example](https://github.com/biskuit/example-theme/blob/master/webpack.config.js#L5)). A complete explanation for this can be found in the [Theme tutorial](../tutorials/theme.md#adding-position-options).
+
+## Add menu items to the admin panel
+You can add menu items to the admin panel's main navigation. These can link to any registered route and be limited to certain access permissions. The `access` property determines if the menu item is visible or not.
+
+```php
+'menu' => [
+
+        // name, can be used for menu hierarchy
+        'hello' => [
+
+            // Label to display
+            'label' => 'Hello',
+
+            // Icon to display
+            'icon' => 'hello:icon.svg',
+
+            // URL this menu item links to
+            'url' => '@hello/admin',
+
+            // Optional: Expression to check if menu item is active on current url
+            // 'active' => '@hello*'
+
+            // Optional: Limit access to roles which have specific permission assigned
+            // 'access' => 'hello: manage hellos'
+        ],
+
+        'hello: panel' => [
+
+            // Parent menu item, makes this appear on 2nd level
+            'parent' => 'hello',
+
+            // See above
+            'label' => 'Hello',
+            'icon' => 'hello:icon.svg',
+            'url' => '@hello/admin'
+            // 'access' => 'hello: manage hellos'
+        ]
+
+    ],
+```
+
+## Link to a settings screen
+Link to a route that renders your settings screen. Setting this property makes Biskuit render a _Settings_ button next to your theme or extension in the admin panel listing.
+
+```php
+'settings' => '@hello/admin/settings',
+```
+
+## Register widgets
+A widget is also a module. With the `widgets` property you can register all widget module definition files. Each of those files is expected to return a PHP array in the form of a valid module definition. Learn more about [widgets](../developer/widgets.md).
+
+```php
+'widgets' => [
+
+    'widgets/form.php'
+
+],
+```
+
+## Widget options
+
+If your module wants to add a configuration screen to the widget editor (which is often the case when developing a theme), you can use the `widget` property to add default options to the widget object (a complete example for a widget configuration screen is in the [Theme tutorial](../tutorials/theme.md#adding-widget-options)).
+
+In the following example, a theme defines a `panel` property which is automatically added to every widget object that is rendered. By default, the property will have the empty string as its value.
+
+```php
+'widget' => [
+
+    'panel' => ''
+
+],
+```
+
+When rendering the widget, you can then access that property from the `$widget->theme` array.
+
+```php
+<?php echo $widget->theme['panel'] ?>
+```
+
+To allow the user, to change the values of the default widget options that you have defined here, you can add an interface to the admin area. To achieve that, you define a JavaScript component to display the editing screen ([Example](https://github.com/biskuit/example-theme/blob/master/app/components/widget-theme.vue)), register that JavaScript file on the widget editor page ([Example](https://github.com/biskuit/example-theme/blob/master/index.php#L47)) and optionally update your Webpack configuration, if you are using Webpack ([Example](https://github.com/biskuit/example-theme/blob/master/webpack.config.js#L7)). A complete explanation for this can be found in the [Theme tutorial](../tutorials/theme.md#adding-widget-options).

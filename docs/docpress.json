@@ -1,0 +1,10 @@
+{
+  "docs": "docs",
+  "github": "biskuitorg/biskuit",
+  "markdown": {
+    "typographer": true,
+    "plugins": {
+      "decorate": {}
+    }
+  }
+}
