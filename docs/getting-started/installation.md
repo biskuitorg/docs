@@ -9,7 +9,7 @@
 </ul>
 
 ## Step 1: Download and open the Installer
-First of all, you need to [download](http://biskuit.org/api/download/latest) the latest Biskuit package and extract the contents to your webserver – either to the web root directory or to a subfolder, for example `/biskuit`.
+First of all, you need to [download](https://github.org/biskuitorg/biskuit/releases) the latest Biskuit package and extract the contents to your webserver – either to the web root directory or to a subfolder, for example `/biskuit`.
 
 **Note** If you unzip the package locally before uploading, make sure to also include the hidden `.htaccess` file.
 
