@@ -403,4 +403,4 @@ Vue.js is a powerful library that makes it easy to build reactive web interfaces
 <a id="complete"></a>
 ## The completed example
 
-In the completed example, we have implemented the actual saving to the backend and cleaned up the source code. It combines all previous steps where we described how to create a simple Todo extension. The result is [available on Github](https://github.com/biskuit/example-todo) for you to fiddle around with.
+In the completed example, we have implemented the actual saving to the backend and cleaned up the source code. It combines all previous steps where we described how to create a simple Todo extension. The result is [available on Github](https://github.com/biskuit/extension-example) for you to fiddle around with.
