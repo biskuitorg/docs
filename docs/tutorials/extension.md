@@ -17,6 +17,7 @@ If you prefer video instead of text, check out the [Youtube playlist with all sc
 
 **Note** The [completed example](https://github.com/biskuit/example-todo) is available on Github.
 
+<a id="step-1-extending-biskuit-using-modules"></a>
 ## Step 1: Extending Biskuit using Modules
 
 <p class="uk-article-lead">As a developer, you can easily extend what Biskuit already offers. Whether you want a custom theme or an extension for additional functionality, both are built following the same approach. In this first step we will introduce what a *package* and what a *module* is - both central concepts of Biskuit.</p>
@@ -92,6 +93,7 @@ In order to test the functionality, make sure you enable the extension in the ba
 
 This minimal example shows how small a fully functional module can be. It has access to the `Application` instance.  With this object you can access all services, trigger events and listen to events triggered by other modules.
 
+<a id="step-2-routing-and-controller"></a>
 ## Step 2: Routing and Controller
 
 <p class="uk-article-lead">With the basic structure of an extension set up, a common task is to register your own controllers and add menu items to the admin area. For that, we will look at some additional properties that you can add to the module definition in your `index.php`.</p>
@@ -187,6 +189,7 @@ To add menu items use the `menu` property in your module definition. Add the fol
 
 Refresh the Biskuit backend and you will see a new menu item which links to the `@todo` route.
 
+<a id="step-3-view-rendering-and-module-config"></a>
 ## Step 3: View rendering and module config
 
 <p class="uk-article-lead">In the past steps, we have looked at the basics of modules and routing. However, our first controller only returned simple strings. In this step, let us look at actual view rendering.</p>
@@ -265,6 +268,7 @@ We can store changes to the module config in the database. The changes from the 
 App::config('todo')->set('entries', $entries);
 ```
 
+<a id="step-4-using-vue-js-in-a-biskuit-extension"></a>
 ## Step 4: Using Vue.js in a Biskuit extension
 
 <p class="uk-article-lead">When building your own screens for the admin area, you can use any library you are used to. But as Biskuit comes with Vue.js included, it makes sense to look into it and see if it's the right choice for you as well. In this step, we will be introducing the basic concepts of working with Vue.js inside Biskuit.</p>
